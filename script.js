@@ -571,7 +571,7 @@ function handleAddCategory() {
   setStatus(`Categorie "${newCategory}" toegevoegd!`);
 }
 
-function handleRemoveCategory() {
+async function handleRemoveCategory() {
   const categorySelect = getById("categorySelect");
   if (!categorySelect) return;
 
@@ -585,11 +585,53 @@ function handleRemoveCategory() {
     return;
   }
 
+  const confirmed = window.confirm(`Weet je zeker dat je categorie "${category}" en alle bijbehorende sounds wilt verwijderen?`);
+  if (!confirmed) return;
+
+  await removeCategory(category);
+}
+
+async function removeCategory(category) {
+  const encodedCategory = encodeURIComponent(category);
+  const categoryPath = `uploads/${encodedCategory}`;
+  setStatus(`Categorie "${category}" wordt verwijderd...`);
+
+  const audioList = await supabaseClient.storage.from(supabaseBucket).list(categoryPath, { limit: 1000, sortBy: { column: "name", order: "asc" } });
+  if (audioList.error) {
+    setStatus(`Kan categorie niet laden: ${audioList.error.message}`);
+    return;
+  }
+
+  const audioPaths = (audioList.data || []).map((item) => `${categoryPath}/${item.name}`);
+  const coverPaths = [];
+  const soundIds = audioPaths.map((path) => getSoundIdFromFileName(getFileNameFromPath(path)));
+  if (soundIds.length > 0) {
+    const coversResult = await supabaseClient.storage.from(supabaseBucket).list("covers", { limit: 1000, sortBy: { column: "name", order: "asc" } });
+    if (!coversResult.error) {
+      (coversResult.data || []).forEach((item) => {
+        const coverSoundId = getSoundIdFromFileName(item.name);
+        if (soundIds.includes(coverSoundId)) {
+          coverPaths.push(`covers/${item.name}`);
+        }
+      });
+    }
+  }
+
+  const deletePaths = [...audioPaths, ...coverPaths];
+  if (deletePaths.length > 0) {
+    const { error } = await supabaseClient.storage.from(supabaseBucket).remove(deletePaths);
+    if (error) {
+      setStatus(`Verwijderen mislukt: ${error.message}`);
+      return;
+    }
+  }
+
   categoriesSet.delete(category);
   localStorage.setItem("soundboard-categories", JSON.stringify(Array.from(categoriesSet)));
   updateCategoryDropdown();
   renderCategoryFilter();
   setStatus(`Categorie "${category}" verwijderd.`);
+  await loadSounds();
 }
 
 function loadSavedSettings() {
