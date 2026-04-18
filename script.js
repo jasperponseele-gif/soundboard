@@ -49,7 +49,11 @@ function getCategoryFromPath(path) {
   // Path format: "memes/airhorn__soundid.mp3" -> "memes"
   const parts = path.split("/");
   if (parts.length >= 2) {
-    return parts[0];
+    try {
+      return decodeURIComponent(parts[0]);
+    } catch {
+      return parts[0];
+    }
   }
   return "";
 }
@@ -449,8 +453,8 @@ async function uploadSingleSound() {
   const encodedName = encodeURIComponent(cleanName);
   const mediaExt = (mediaFile.name.split(".").pop() || "bin").toLowerCase();
   
-  // Use category folder if selected
-  const folderPrefix = category ? `${category}/` : "";
+  const safeCategory = category ? encodeURIComponent(category) : "";
+  const folderPrefix = safeCategory ? `${safeCategory}/` : "";
   const audioPath = `uploads/${folderPrefix}${soundId}__${encodedName}.${mediaExt}`;
 
   confirmBtn.disabled = true;
