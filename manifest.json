@@ -1,0 +1,20 @@
+{
+  "name": "Soundboard Pro",
+  "short_name": "Soundboard",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#d94841",
+  "theme_color": "#070b18",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2907/2907253.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2907/2907253.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

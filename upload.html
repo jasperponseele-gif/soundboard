@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#070b18" />
+  <title>Upload - Soundboard</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="topbar">
+      <div>
+        <h1>Soundboard</h1>
+        <p class="subtitle">door jasper</p>
+      </div>
+      <a class="upload-link-btn secondary" href="index.html">Naar Sounds</a>
+    </header>
+
+    <p id="updateBanner" class="update-banner" hidden>
+      Nieuwe versie beschikbaar. <button id="refreshBtn" type="button" class="small-btn">Ververs</button>
+    </p>
+
+    <section class="upload-panel">
+      <h2>Upload nieuwe sound</h2>
+      <p class="upload-help">Kies eerst audio/video, voeg optioneel een foto toe, en klik dan op bevestigen.</p>
+
+      <label for="audioUpload" class="upload-label">1) Audio of video (verplicht)</label>
+      <input id="audioUpload" type="file" accept="audio/*,video/*,.mp3,.m4a,.wav,.aac,.ogg,.mp4,.mov,.m4v,.webm" />
+
+      <label for="imageUpload" class="upload-label">2) Foto (optioneel)</label>
+      <input id="imageUpload" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+
+      <label for="categorySelect" class="upload-label">3) Categorie (optioneel)</label>
+      <div class="category-input-row">
+        <select id="categorySelect">
+          <option value="">Geen categorie</option>
+        </select>
+        <input id="newCategoryInput" type="text" maxlength="20" placeholder="Nieuwe categorie..." />
+        <button id="addCategoryBtn" type="button" class="small-btn">+ Toevoegen</button>
+      </div>
+
+      <label for="soundNameInput" class="upload-label">4) Naam (optioneel)</label>
+      <input id="soundNameInput" type="text" maxlength="40" placeholder="Bijv. Airhorn" />
+
+      <button id="confirmUploadBtn" type="button">Bevestigen</button>
+      <div id="uploadProgressContainer" class="upload-progress" hidden>
+        <div id="uploadProgressBar" class="upload-progress-bar"></div>
+      </div>
+      <p id="statusMessage" class="status-message" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_URL = "https://rwuqogqomrihbqsmkxmm.supabase.co";
+    window.SUPABASE_ANON_KEY = "sb_publishable_JnHPzrG4Yp0BFHNggLkCYQ_VLE5b5kK";
+    window.SUPABASE_BUCKET = "sounds";
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
