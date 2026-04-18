@@ -316,15 +316,15 @@ async function deleteSound(sound) {
   pauseAllSounds();
   const paths = [sound.audioPath];
   if (sound.imagePath) paths.push(sound.imagePath);
+  console.log("Deleting storage paths:", paths);
   const { error } = await supabaseClient.storage.from(supabaseBucket).remove(paths);
   if (error) {
+    console.error("Delete error:", error);
     setStatus(`Verwijderen mislukt: ${error.message}`);
     return;
   }
-  const index = sounds.findIndex((item) => item.id === sound.id);
-  if (index >= 0) sounds.splice(index, 1);
-  renderLibrary();
   setStatus(`Verwijderd: ${sound.name}`);
+  await loadSounds();
 }
 
 async function loadSounds() {
