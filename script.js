@@ -55,23 +55,17 @@ function getSoundNameFromFileName(fileName) {
 function getCategoryFromPath(path) {
   const parts = path.split("/");
   if (parts.length >= 2) {
-    const first = parts[0];
-    if (first === "uploads") {
-      const fileName = parts.slice(1).join("/");
-      const fileParts = getFileNameFromPath(fileName).replace(/\.[^/.]+$/i, "").split("__");
-      if (fileParts.length >= 3) {
-        try {
-          return decodeURIComponent(fileParts[1]);
-        } catch {
-          return fileParts[1];
-        }
+    if (parts[0] === "uploads" && parts.length >= 3) {
+      try {
+        return decodeURIComponent(parts[1]);
+      } catch {
+        return parts[1];
       }
-      return "";
     }
     try {
-      return decodeURIComponent(first);
+      return decodeURIComponent(parts[0]);
     } catch {
-      return first;
+      return parts[0];
     }
   }
 
@@ -505,8 +499,9 @@ async function uploadSingleSound() {
   const mediaExt = (mediaFile.name.split(".").pop() || "bin").toLowerCase();
   
   category = category.trim();
-  const categorySegment = category ? `${encodeURIComponent(category)}__` : "";
-  const audioPath = `uploads/${soundId}__${categorySegment}${encodedName}.${mediaExt}`;
+  const audioPath = category
+    ? `uploads/${encodeURIComponent(category)}/${soundId}__${encodedName}.${mediaExt}`
+    : `uploads/${soundId}__${encodedName}.${mediaExt}`;
 
   confirmBtn.disabled = true;
   resetUploadProgress();
@@ -563,24 +558,38 @@ function handleAddCategory() {
     return;
   }
   
-  // Add to set and save
   categoriesSet.add(newCategory);
   localStorage.setItem("soundboard-categories", JSON.stringify(Array.from(categoriesSet)));
-  
-  // Update dropdown
   updateCategoryDropdown();
-  
-  // Select the new category
   if (categorySelect) {
     categorySelect.value = newCategory;
   }
-  
-  // Clear input
   if (newCategoryInput) {
     newCategoryInput.value = "";
   }
-  
+  renderCategoryFilter();
   setStatus(`Categorie "${newCategory}" toegevoegd!`);
+}
+
+function handleRemoveCategory() {
+  const categorySelect = getById("categorySelect");
+  if (!categorySelect) return;
+
+  const category = categorySelect.value.trim();
+  if (!category) {
+    setStatus("Selecteer eerst een categorie om te verwijderen.");
+    return;
+  }
+  if (!categoriesSet.has(category)) {
+    setStatus("Deze categorie bestaat niet.");
+    return;
+  }
+
+  categoriesSet.delete(category);
+  localStorage.setItem("soundboard-categories", JSON.stringify(Array.from(categoriesSet)));
+  updateCategoryDropdown();
+  renderCategoryFilter();
+  setStatus(`Categorie "${category}" verwijderd.`);
 }
 
 function loadSavedSettings() {
@@ -697,12 +706,14 @@ function wireUploadEvents() {
   const audioInput = getById("audioUpload");
   const imageInput = getById("imageUpload");
   const addCategoryBtn = getById("addCategoryBtn");
+  const removeCategoryBtn = getById("removeCategoryBtn");
   if (!confirmBtn) return;
 
   confirmBtn.addEventListener("click", () => uploadSingleSound());
   audioInput?.addEventListener("change", validateUploadFiles);
   imageInput?.addEventListener("change", validateUploadFiles);
   addCategoryBtn?.addEventListener("click", () => handleAddCategory());
+  removeCategoryBtn?.addEventListener("click", () => handleRemoveCategory());
 }
 
 function boot() {
