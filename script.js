@@ -35,6 +35,13 @@ function getSoundIdFromFileName(fileName) {
 function getSoundNameFromFileName(fileName) {
   const base = fileName.replace(/\.[^/.]+$/i, "");
   const parts = base.split("__");
+  if (parts.length >= 3) {
+    try {
+      return decodeURIComponent(parts[2]);
+    } catch {
+      return parts[2];
+    }
+  }
   if (parts.length >= 2) {
     try {
       return decodeURIComponent(parts[1]);
@@ -46,13 +53,30 @@ function getSoundNameFromFileName(fileName) {
 }
 
 function getCategoryFromPath(path) {
-  // Path format: "memes/airhorn__soundid.mp3" -> "memes"
   const parts = path.split("/");
   if (parts.length >= 2) {
+    const first = parts[0];
+    if (first === "uploads" && parts.length >= 3) {
+      try {
+        return decodeURIComponent(parts[1]);
+      } catch {
+        return parts[1];
+      }
+    }
     try {
-      return decodeURIComponent(parts[0]);
+      return decodeURIComponent(first);
     } catch {
-      return parts[0];
+      return first;
+    }
+  }
+
+  const fileName = getFileNameFromPath(path);
+  const fileParts = fileName.replace(/\.[^/.]+$/i, "").split("__");
+  if (fileParts.length >= 3) {
+    try {
+      return decodeURIComponent(fileParts[1]);
+    } catch {
+      return fileParts[1];
     }
   }
   return "";
@@ -379,12 +403,11 @@ async function loadCategories() {
     } catch {}
   }
 
-  const foldersResult = await supabaseClient.storage.from(supabaseBucket).list("uploads", { limit: 100, folderMode: "folders" });
-  if (!foldersResult.error && foldersResult.data) {
-    foldersResult.data.forEach((item) => {
-      if (item.name) {
-        knownCategories.add(item.name);
-      }
+  const listResult = await supabaseClient.storage.from(supabaseBucket).list("uploads", { limit: 1000, sortBy: { column: "name", order: "asc" } });
+  if (!listResult.error && listResult.data) {
+    listResult.data.forEach((item) => {
+      const category = getCategoryFromPath(item.name);
+      if (category) knownCategories.add(category);
     });
   }
 
@@ -477,8 +500,8 @@ async function uploadSingleSound() {
   const mediaExt = (mediaFile.name.split(".").pop() || "bin").toLowerCase();
   
   category = category.trim();
-  const folderPrefix = category ? `${category}/` : "";
-  const audioPath = `uploads/${folderPrefix}${soundId}__${encodedName}.${mediaExt}`;
+  const categorySegment = category ? `${encodeURIComponent(category)}__` : "";
+  const audioPath = `uploads/${soundId}__${categorySegment}${encodedName}.${mediaExt}`;
 
   confirmBtn.disabled = true;
   resetUploadProgress();
