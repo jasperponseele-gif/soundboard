@@ -56,12 +56,17 @@ function getCategoryFromPath(path) {
   const parts = path.split("/");
   if (parts.length >= 2) {
     const first = parts[0];
-    if (first === "uploads" && parts.length >= 3) {
-      try {
-        return decodeURIComponent(parts[1]);
-      } catch {
-        return parts[1];
+    if (first === "uploads") {
+      const fileName = parts.slice(1).join("/");
+      const fileParts = getFileNameFromPath(fileName).replace(/\.[^/.]+$/i, "").split("__");
+      if (fileParts.length >= 3) {
+        try {
+          return decodeURIComponent(fileParts[1]);
+        } catch {
+          return fileParts[1];
+        }
       }
+      return "";
     }
     try {
       return decodeURIComponent(first);
