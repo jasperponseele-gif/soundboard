@@ -215,8 +215,9 @@ async function playSound(sound, playBtn) {
     
     // Add to recent sounds
     addToRecent(sound);
-  } catch {
-    setStatus("Afspelen mislukt. Probeer nog eens.");
+  } catch (e) {
+    console.error("Afspelen mislukt:", e, "URL:", sound.audio.src);
+    setStatus(`Afspelen mislukt: ${e.message || "Onbekende fout"}. Controleer console voor details.`);
   }
 }
 
@@ -382,6 +383,7 @@ async function loadSounds() {
       const imagePath = coverById.get(soundId) || null;
       
       const audio = new Audio(getPublicUrl(audioPath));
+      console.log("Audio URL:", audio.src, "voor", audioPath);
       audio.setAttribute("playsinline", "true");
       audio.preload = "metadata";
 
