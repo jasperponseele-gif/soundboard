@@ -370,6 +370,29 @@ function renderCategoryFilter() {
   filterSelect.value = currentValue;
 }
 
+async function loadCategories() {
+  const knownCategories = new Set();
+  const savedCategories = localStorage.getItem("soundboard-categories");
+  if (savedCategories) {
+    try {
+      JSON.parse(savedCategories).forEach((cat) => knownCategories.add(cat));
+    } catch {}
+  }
+
+  const foldersResult = await supabaseClient.storage.from(supabaseBucket).list("", { limit: 100, folderMode: "folders" });
+  if (!foldersResult.error && foldersResult.data) {
+    foldersResult.data.forEach((item) => {
+      if (item.name && item.name !== "uploads" && item.name !== "covers") {
+        knownCategories.add(item.name);
+      }
+    });
+  }
+
+  categoriesSet.clear();
+  knownCategories.forEach((cat) => categoriesSet.add(cat));
+  updateCategoryDropdown();
+}
+
 function setUploadProgress(percent) {
   const progressContainer = getById("uploadProgressContainer");
   const progressBar = getById("uploadProgressBar");
@@ -453,8 +476,8 @@ async function uploadSingleSound() {
   const encodedName = encodeURIComponent(cleanName);
   const mediaExt = (mediaFile.name.split(".").pop() || "bin").toLowerCase();
   
-  const safeCategory = category ? encodeURIComponent(category) : "";
-  const folderPrefix = safeCategory ? `${safeCategory}/` : "";
+  category = category.trim();
+  const folderPrefix = category ? `${category}/` : "";
   const audioPath = `uploads/${folderPrefix}${soundId}__${encodedName}.${mediaExt}`;
 
   confirmBtn.disabled = true;
@@ -665,7 +688,7 @@ function boot() {
   wireLibraryEvents();
   wireUploadEvents();
   if (getById("categorySelect")) {
-    updateCategoryDropdown();
+    loadCategories();
   }
   if (getById("soundGrid")) {
     loadSounds();
