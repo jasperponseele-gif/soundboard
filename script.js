@@ -14,21 +14,6 @@ const favoritesSet = new Set();
 const categoriesSet = new Set();
 let currentCategory = "";
 
-// Recent sounds tracking
-const recentSounds = [];
-const MAX_RECENT = 5;
-
-// Category emojis map
-const categoryEmojis = {
-  "memes": "😂",
-  "gaming": "🎮",
-  "feest": "🎉",
-  "vlog": "📢",
-  "reactie": "💬",
-  "nieuws": "📰",
-  " defaults": "🔊"
-};
-
 function getById(id) {
   return document.getElementById(id);
 }
@@ -212,91 +197,10 @@ async function playSound(sound, playBtn) {
     await sound.audio.play();
     currentAudio = sound.audio;
     if (playBtn) playBtn.textContent = "❚❚";
-    
-    // Add to recent sounds
-    addToRecent(sound);
   } catch (e) {
     console.error("Afspelen mislukt:", e, "URL:", sound.audio.src);
     setStatus(`Afspelen mislukt: ${e.message || "Onbekende fout"}. Controleer console voor details.`);
   }
-}
-
-function addToRecent(sound) {
-  // Remove if already exists
-  const existingIndex = recentSounds.findIndex(s => s.soundId === sound.soundId);
-  if (existingIndex >= 0) {
-    recentSounds.splice(existingIndex, 1);
-  }
-  // Add to beginning
-  recentSounds.unshift(sound);
-  // Keep only MAX_RECENT
-  while (recentSounds.length > MAX_RECENT) {
-    recentSounds.pop();
-  }
-  renderRecentSounds();
-  saveRecentSounds();
-}
-
-function renderRecentSounds() {
-  const recentGrid = getById("recentGrid");
-  const recentSection = getById("recentSection");
-  if (!recentGrid || !recentSection) return;
-
-  if (recentSounds.length === 0) {
-    recentSection.hidden = true;
-    recentGrid.innerHTML = "";
-    return;
-  }
-
-  recentSection.hidden = false;
-  recentGrid.innerHTML = "";
-
-  recentSounds.forEach((sound) => {
-    const card = document.createElement("article");
-    card.className = "sound-card sound-card-recent";
-
-    const image = document.createElement("img");
-    image.className = "sound-image";
-    image.src = sound.imageUrl || "https://placehold.co/64x64/f6d4cd/8a4f45?text=%F0%9F%94%8A";
-    image.alt = `${sound.name} afbeelding`;
-
-    const title = document.createElement("p");
-    title.className = "sound-title";
-    title.textContent = sound.name;
-
-    const playBtn = document.createElement("button");
-    playBtn.className = "play-btn";
-    playBtn.type = "button";
-    playBtn.textContent = "▶";
-    playBtn.addEventListener("click", async () => {
-      await playSound(sound, playBtn);
-    });
-
-    card.append(image, title, playBtn);
-    recentGrid.appendChild(card);
-  });
-}
-
-function saveRecentSounds() {
-  const ids = recentSounds.map(s => s.soundId);
-  localStorage.setItem("soundboard-recent", JSON.stringify(ids));
-}
-
-function loadRecentSounds() {
-  const saved = localStorage.getItem("soundboard-recent");
-  if (!saved) return;
-  try {
-    const ids = JSON.parse(saved);
-    ids.forEach(id => {
-      const sound = sounds.find(s => s.soundId === id);
-      if (sound) recentSounds.push(sound);
-    });
-  } catch {}
-}
-
-function getCategoryEmoji(category) {
-  if (!category) return "📁";
-  return categoryEmojis[category.toLowerCase()] || "📁";
 }
 
 function toggleFavorite(sound) {
@@ -656,6 +560,18 @@ function saveVolume(value) {
   localStorage.setItem("soundboard-volume", value);
 }
 
+function unregisterServiceWorkers() {
+  if (!("serviceWorker" in navigator)) return;
+
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => {
+      registration.unregister();
+    });
+  }).catch((error) => {
+    console.error("Service worker unregister failed:", error);
+  });
+}
+
 function showUpdateBanner() {
   const banner = getById("updateBanner");
   if (banner) banner.hidden = false;
@@ -698,28 +614,6 @@ function wireLibraryEvents() {
     saveVolume(String(volume));
   });
   
-  // Theme Toggle
-  getById("themeToggle")?.addEventListener("click", () => {
-    const html = document.documentElement;
-    const isDark = html.getAttribute("data-theme") === "dark";
-    if (isDark) {
-      html.setAttribute("data-theme", "light");
-      getById("themeToggle").textContent = "🌙";
-      localStorage.setItem("soundboard-theme", "light");
-    } else {
-      html.setAttribute("data-theme", "dark");
-      getById("themeToggle").textContent = "☀️";
-      localStorage.setItem("soundboard-theme", "dark");
-    }
-  });
-  
-  // Load saved theme
-  const savedTheme = localStorage.getItem("soundboard-theme");
-  if (savedTheme === "dark") {
-    document.documentElement.setAttribute("data-theme", "dark");
-    getById("themeToggle").textContent = "☀️";
-  }
-  
   // Volume Presets
   document.querySelectorAll(".preset-btn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -730,33 +624,6 @@ function wireLibraryEvents() {
         volumeEl.dispatchEvent(new Event("input"));
       }
     });
-  });
-  
-  // Random Sound knop
-  getById("randomBtn")?.addEventListener("click", () => {
-    if (sounds.length === 0) {
-      setStatus("Nog geen sounds om te kiezen.");
-      return;
-    }
-    const randomIndex = Math.floor(Math.random() * sounds.length);
-    const randomSound = sounds[randomIndex];
-    const btn = randomSound.playButton;
-    playSound(randomSound, btn);
-  });
-  
-  // Keyboard shortcuts (1-9)
-  document.addEventListener("keydown", (e) => {
-    // Only if not in input field
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-    
-    const key = e.key;
-    if (key >= "1" && key <= "9") {
-      const index = parseInt(key) - 1;
-      if (sounds[index]) {
-        const btn = sounds[index].playButton;
-        playSound(sounds[index], btn);
-      }
-    }
   });
   
   getById("refreshBtn")?.addEventListener("click", () => {
@@ -787,7 +654,7 @@ function boot() {
   }
   supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
   loadSavedSettings();
-  registerServiceWorker();
+  unregisterServiceWorkers();
   wireLibraryEvents();
   wireUploadEvents();
   if (getById("soundGrid")) {
