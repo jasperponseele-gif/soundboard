@@ -53,22 +53,6 @@ function getSoundNameFromFileName(fileName) {
 }
 
 function getCategoryFromPath(path) {
-  const parts = path.split("/");
-  if (parts.length >= 2) {
-    if (parts[0] === "uploads" && parts.length >= 3) {
-      try {
-        return decodeURIComponent(parts[1]);
-      } catch {
-        return parts[1];
-      }
-    }
-    try {
-      return decodeURIComponent(parts[0]);
-    } catch {
-      return parts[0];
-    }
-  }
-
   const fileName = getFileNameFromPath(path);
   const fileParts = fileName.replace(/\.[^/.]+$/i, "").split("__");
   if (fileParts.length >= 3) {
@@ -78,6 +62,24 @@ function getCategoryFromPath(path) {
       return fileParts[1];
     }
   }
+
+  const parts = path.split("/");
+  if (parts.length >= 2) {
+    const first = parts[0];
+    if (first === "uploads" && parts.length >= 3) {
+      try {
+        return decodeURIComponent(parts[1]);
+      } catch {
+        return parts[1];
+      }
+    }
+    try {
+      return decodeURIComponent(first);
+    } catch {
+      return first;
+    }
+  }
+
   return "";
 }
 
@@ -499,9 +501,8 @@ async function uploadSingleSound() {
   const mediaExt = (mediaFile.name.split(".").pop() || "bin").toLowerCase();
   
   category = category.trim();
-  const audioPath = category
-    ? `uploads/${encodeURIComponent(category)}/${soundId}__${encodedName}.${mediaExt}`
-    : `uploads/${soundId}__${encodedName}.${mediaExt}`;
+  const categorySegment = category ? `${encodeURIComponent(category)}__` : "";
+  const audioPath = `uploads/${soundId}__${categorySegment}${encodedName}.${mediaExt}`;
 
   confirmBtn.disabled = true;
   resetUploadProgress();
@@ -596,13 +597,16 @@ async function removeCategory(category) {
   const categoryPath = `uploads/${encodedCategory}`;
   setStatus(`Categorie "${category}" wordt verwijderd...`);
 
-  const audioList = await supabaseClient.storage.from(supabaseBucket).list(categoryPath, { limit: 1000, sortBy: { column: "name", order: "asc" } });
-  if (audioList.error) {
-    setStatus(`Kan categorie niet laden: ${audioList.error.message}`);
+  const uploadsResult = await supabaseClient.storage.from(supabaseBucket).list("uploads", { limit: 1000, sortBy: { column: "name", order: "asc" } });
+  if (uploadsResult.error) {
+    setStatus(`Kan categorie niet laden: ${uploadsResult.error.message}`);
     return;
   }
 
-  const audioPaths = (audioList.data || []).map((item) => `${categoryPath}/${item.name}`);
+  const audioPaths = (uploadsResult.data || [])
+    .filter((item) => getCategoryFromPath(item.name) === category)
+    .map((item) => `uploads/${item.name}`);
+
   const coverPaths = [];
   const soundIds = audioPaths.map((path) => getSoundIdFromFileName(getFileNameFromPath(path)));
   if (soundIds.length > 0) {
