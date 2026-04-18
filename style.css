@@ -217,19 +217,12 @@ h1 {
   font-size: 0.9rem;
 }
 
-.favorite-btn.active {
-  background: #ffd8d0;
-  border-color: #f2b2a5;
-}
-
-.update-banner {
-  margin: 0 0 0.85rem;
-  padding: 0.85rem 0.95rem;
-  background: #f8e8e6;
-  color: #6f3731;
-  border: 1px solid #f1c7bf;
-  border-radius: 14px;
-}
+  .sound-uploader {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+    text-align: left;
+  }
 
 .upload-progress {
   width: 100%;

@@ -35,11 +35,18 @@ function getSoundIdFromFileName(fileName) {
 function getSoundNameFromFileName(fileName) {
   const base = fileName.replace(/\.[^/.]+$/i, "");
   const parts = base.split("__");
+  if (parts.length >= 4) {
+    try {
+      return decodeURIComponent(parts.slice(3).join("__"));
+    } catch {
+      return parts.slice(3).join("__");
+    }
+  }
   if (parts.length >= 3) {
     try {
-      return decodeURIComponent(parts[2]);
+      return decodeURIComponent(parts.slice(2).join("__"));
     } catch {
-      return parts[2];
+      return parts.slice(2).join("__");
     }
   }
   if (parts.length >= 2) {
@@ -52,9 +59,30 @@ function getSoundNameFromFileName(fileName) {
   return base;
 }
 
+function getUploaderFromPath(path) {
+  const fileName = getFileNameFromPath(path);
+  const parts = fileName.replace(/\.[^/.]+$/i, "").split("__");
+  if (parts.length >= 4) {
+    try {
+      return decodeURIComponent(parts[2]);
+    } catch {
+      return parts[2];
+    }
+  }
+  return "";
+}
+
 function getCategoryFromPath(path) {
   const fileName = getFileNameFromPath(path);
   const fileParts = fileName.replace(/\.[^/.]+$/i, "").split("__");
+  if (fileParts.length >= 4) {
+    try {
+      const category = decodeURIComponent(fileParts[1]);
+      return category === "nocategory" ? "" : category;
+    } catch {
+      return fileParts[1] === "nocategory" ? "" : fileParts[1];
+    }
+  }
   if (fileParts.length >= 3) {
     try {
       return decodeURIComponent(fileParts[1]);
@@ -171,6 +199,12 @@ function renderLibrary() {
 
     metaRow.append(title, typeBadge);
 
+    const uploaderInfo = sound.uploader ? document.createElement("p") : null;
+    if (uploaderInfo) {
+      uploaderInfo.className = "sound-uploader";
+      uploaderInfo.textContent = `Geüpload door ${sound.uploader}`;
+    }
+
     const playBtn = document.createElement("button");
     playBtn.className = "play-btn";
     playBtn.type = "button";
@@ -205,7 +239,11 @@ function renderLibrary() {
     deleteBtn.addEventListener("click", () => deleteSound(sound));
 
     actions.append(favoriteBtn, pauseBtn, deleteBtn);
-    card.append(image, metaRow, playBtn, actions);
+    if (uploaderInfo) {
+      card.append(image, metaRow, uploaderInfo, playBtn, actions);
+    } else {
+      card.append(image, metaRow, playBtn, actions);
+    }
     grid.appendChild(card);
     sound.playButton = playBtn;
   });
@@ -287,6 +325,7 @@ async function loadSounds() {
 
   categoriesSet.clear();
   knownCategories.forEach((cat) => categoriesSet.add(cat));
+  localStorage.setItem("soundboard-categories", JSON.stringify(Array.from(categoriesSet)));
   updateCategoryDropdown();
 
   if (audioResult.error) {
@@ -320,6 +359,7 @@ async function loadSounds() {
         id: crypto.randomUUID(),
         soundId,
         name: getSoundNameFromFileName(fileName),
+        uploader: getUploaderFromPath(fileName),
         category: category,
         audioPath,
         imagePath,
@@ -414,6 +454,7 @@ async function loadCategories() {
 
   categoriesSet.clear();
   knownCategories.forEach((cat) => categoriesSet.add(cat));
+  localStorage.setItem("soundboard-categories", JSON.stringify(Array.from(categoriesSet)));
   updateCategoryDropdown();
 }
 
@@ -489,10 +530,17 @@ async function uploadSingleSound() {
   const newCategory = newCategoryInput?.value?.trim() || "";
   
   if (newCategory) {
-    // Add new category
     category = newCategory;
     categoriesSet.add(category);
     localStorage.setItem("soundboard-categories", JSON.stringify(Array.from(categoriesSet)));
+  }
+
+  const uploaderInput = getById("uploaderInput");
+  const uploader = (uploaderInput?.value.trim() || "").slice(0, 30);
+  if (!uploader) {
+    setStatus("Vul je naam in voordat je uploadt.");
+    confirmBtn.disabled = false;
+    return;
   }
 
   const cleanName = (nameInput?.value.trim() || mediaFile.name.replace(/\.[^/.]+$/i, "")).slice(0, 40);
@@ -501,8 +549,9 @@ async function uploadSingleSound() {
   const mediaExt = (mediaFile.name.split(".").pop() || "bin").toLowerCase();
   
   category = category.trim();
-  const categorySegment = category ? `${encodeURIComponent(category)}__` : "";
-  const audioPath = `uploads/${soundId}__${categorySegment}${encodedName}.${mediaExt}`;
+  const uploaderSegment = encodeURIComponent(uploader);
+  const categorySegment = category ? `${encodeURIComponent(category)}__` : "nocategory__";
+  const audioPath = `uploads/${soundId}__${categorySegment}${uploaderSegment}__${encodedName}.${mediaExt}`;
 
   confirmBtn.disabled = true;
   resetUploadProgress();
