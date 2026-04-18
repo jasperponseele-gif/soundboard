@@ -311,23 +311,6 @@ async function loadSounds() {
     return;
   }
 
-  const knownCategories = new Set();
-  const savedCategories = localStorage.getItem("soundboard-categories");
-  if (savedCategories) {
-    try {
-      JSON.parse(savedCategories).forEach((cat) => knownCategories.add(cat));
-    } catch {}
-  }
-  (audioResult.data || []).forEach((item) => {
-    const category = getCategoryFromPath(item.name);
-    if (category) knownCategories.add(category);
-  });
-
-  categoriesSet.clear();
-  knownCategories.forEach((cat) => categoriesSet.add(cat));
-  localStorage.setItem("soundboard-categories", JSON.stringify(Array.from(categoriesSet)));
-  updateCategoryDropdown();
-
   if (audioResult.error) {
     setStatus(`Laden mislukt: ${audioResult.error.message}`);
     return;
@@ -344,7 +327,6 @@ async function loadSounds() {
   (audioResult.data || [])
     .filter((item) => mediaExtensions.has((item.name.split(".").pop() || "").toLowerCase()))
     .forEach((item) => {
-      const category = getCategoryFromPath(item.name);
       const fileName = getFileNameFromPath(item.name);
       const soundId = getSoundIdFromFileName(fileName);
       const audioPath = `uploads/${item.name}`;
@@ -360,7 +342,6 @@ async function loadSounds() {
         soundId,
         name: getSoundNameFromFileName(fileName),
         uploader: getUploaderFromPath(fileName),
-        category: category,
         audioPath,
         imagePath,
         imageUrl: imagePath ? getPublicUrl(imagePath) : null,
