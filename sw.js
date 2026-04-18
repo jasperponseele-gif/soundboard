@@ -1,5 +1,5 @@
-const CACHE_NAME = "soundboard-pro-v6";
-const ASSETS = ["./", "./index.html", "./upload.html", "./style.css", "./script.js", "./manifest.json", "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"];
+const CACHE_NAME = "soundboard-pro-v3";
+const ASSETS = ["./", "./index.html", "./style.css", "./script.js", "./manifest.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -23,14 +23,6 @@ self.addEventListener("message", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-  
-  // Don't cache Supabase requests - always go to network
-  if (url.hostname.includes("supabase") || url.hostname.includes("jsdelivr")) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-  
   if (event.request.method !== "GET") return;
 
   if (event.request.mode === "navigate") {

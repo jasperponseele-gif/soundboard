@@ -379,7 +379,7 @@ async function loadSounds() {
       const category = getCategoryFromPath(item.name);
       const fileName = getFileNameFromPath(item.name);
       const soundId = getSoundIdFromFileName(fileName);
-      const audioPath = item.name;
+      const audioPath = `uploads/${item.name}`;
       const imagePath = coverById.get(soundId) || null;
       
       const audio = new Audio(getPublicUrl(audioPath));
