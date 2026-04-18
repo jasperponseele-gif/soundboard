@@ -1,5 +1,5 @@
-const CACHE_NAME = "soundboard-pro-v4";
-const ASSETS = ["./", "./index.html", "./style.css", "./script.js", "./manifest.json"];
+const CACHE_NAME = "soundboard-pro-v5";
+const ASSETS = ["./", "./index.html", "./upload.html", "./style.css", "./script.js", "./manifest.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

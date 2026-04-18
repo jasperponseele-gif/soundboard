@@ -444,9 +444,18 @@ async function loadCategories() {
     } catch {}
   }
 
-  const listResult = await supabaseClient.storage.from(supabaseBucket).list("uploads", { limit: 1000, sortBy: { column: "name", order: "asc" } });
-  if (!listResult.error && listResult.data) {
-    listResult.data.forEach((item) => {
+  const folderResult = await supabaseClient.storage.from(supabaseBucket).list("uploads", { limit: 100, folderMode: "folders" });
+  if (!folderResult.error && folderResult.data) {
+    folderResult.data.forEach((item) => {
+      if (item.name) {
+        knownCategories.add(item.name);
+      }
+    });
+  }
+
+  const fileResult = await supabaseClient.storage.from(supabaseBucket).list("uploads", { limit: 1000, sortBy: { column: "name", order: "asc" } });
+  if (!fileResult.error && fileResult.data) {
+    fileResult.data.forEach((item) => {
       const category = getCategoryFromPath(item.name);
       if (category) knownCategories.add(category);
     });
@@ -550,8 +559,10 @@ async function uploadSingleSound() {
   
   category = category.trim();
   const uploaderSegment = encodeURIComponent(uploader);
-  const categorySegment = category ? `${encodeURIComponent(category)}__` : "nocategory__";
-  const audioPath = `uploads/${soundId}__${categorySegment}${uploaderSegment}__${encodedName}.${mediaExt}`;
+  const encodedNameSegment = encodedName;
+  const audioPath = category
+    ? `uploads/${encodeURIComponent(category)}/${soundId}__${uploaderSegment}__${encodedNameSegment}.${mediaExt}`
+    : `uploads/${soundId}__nocategory__${uploaderSegment}__${encodedNameSegment}.${mediaExt}`;
 
   confirmBtn.disabled = true;
   resetUploadProgress();
