@@ -233,36 +233,32 @@ async function deleteSound(sound) {
 
 async function loadSounds() {
   setStatus("Sounds laden...");
-  
-  // First, get list of folders (categories) from uploads
-  const foldersResult = await supabaseClient.storage.from(supabaseBucket).list("", { limit: 100, folderMode: "folders" });
-  
-  const knownCategories = new Set();
-  if (foldersResult.data) {
-    foldersResult.data.forEach((item) => {
-      if (item.name && item.name !== "uploads" && item.name !== "covers") {
-        knownCategories.add(item.name);
-      }
-    });
+
+  const [audioResult, coverResult] = await Promise.all([
+    supabaseClient.storage.from(supabaseBucket).list("uploads", { limit: 1000, sortBy: { column: "name", order: "asc" } }),
+    supabaseClient.storage.from(supabaseBucket).list("covers", { limit: 1000, sortBy: { column: "name", order: "asc" } }),
+  ]);
+
+  if (audioResult.error) {
+    setStatus(`Laden mislukt: ${audioResult.error.message}`);
+    return;
   }
 
-  // Also add any saved categories from localStorage
+  const knownCategories = new Set();
   const savedCategories = localStorage.getItem("soundboard-categories");
   if (savedCategories) {
     try {
       JSON.parse(savedCategories).forEach((cat) => knownCategories.add(cat));
     } catch {}
   }
+  (audioResult.data || []).forEach((item) => {
+    const category = getCategoryFromPath(item.name);
+    if (category) knownCategories.add(category);
+  });
 
-  // Rebuild categoriesSet
   categoriesSet.clear();
   knownCategories.forEach((cat) => categoriesSet.add(cat));
   updateCategoryDropdown();
-
-  const [audioResult, coverResult] = await Promise.all([
-    supabaseClient.storage.from(supabaseBucket).list("uploads", { limit: 1000, sortBy: { column: "name", order: "asc" } }),
-    supabaseClient.storage.from(supabaseBucket).list("covers", { limit: 1000, sortBy: { column: "name", order: "asc" } }),
-  ]);
 
   if (audioResult.error) {
     setStatus(`Laden mislukt: ${audioResult.error.message}`);
@@ -550,6 +546,13 @@ function loadSavedSettings() {
       favoritesSet.clear();
     }
   }
+
+  const savedCategories = localStorage.getItem("soundboard-categories");
+  if (savedCategories) {
+    try {
+      JSON.parse(savedCategories).forEach((cat) => categoriesSet.add(cat));
+    } catch {}
+  }
 }
 
 function saveFavorites() {
@@ -657,6 +660,9 @@ function boot() {
   unregisterServiceWorkers();
   wireLibraryEvents();
   wireUploadEvents();
+  if (getById("categorySelect")) {
+    updateCategoryDropdown();
+  }
   if (getById("soundGrid")) {
     loadSounds();
     renderCategoryFilter();
