@@ -520,8 +520,6 @@ async function uploadSingleSound() {
   const audioInput = getById("audioUpload");
   const imageInput = getById("imageUpload");
   const nameInput = getById("soundNameInput");
-  const categorySelect = getById("categorySelect");
-  const newCategoryInput = getById("newCategoryInput");
   const confirmBtn = getById("confirmUploadBtn");
   if (!audioInput || !confirmBtn) return;
 
@@ -534,35 +532,11 @@ async function uploadSingleSound() {
     return;
   }
 
-  // Get selected category or new category
-  let category = categorySelect?.value || "";
-  const newCategory = newCategoryInput?.value?.trim() || "";
-  
-  if (newCategory) {
-    category = newCategory;
-    categoriesSet.add(category);
-    localStorage.setItem("soundboard-categories", JSON.stringify(Array.from(categoriesSet)));
-  }
-
-  const uploaderInput = getById("uploaderInput");
-  const uploader = (uploaderInput?.value.trim() || "").slice(0, 30);
-  if (!uploader) {
-    setStatus("Vul je naam in voordat je uploadt.");
-    confirmBtn.disabled = false;
-    return;
-  }
-
   const cleanName = (nameInput?.value.trim() || mediaFile.name.replace(/\.[^/.]+$/i, "")).slice(0, 40);
   const soundId = crypto.randomUUID();
   const encodedName = encodeURIComponent(cleanName);
   const mediaExt = (mediaFile.name.split(".").pop() || "bin").toLowerCase();
-  
-  category = category.trim();
-  const uploaderSegment = encodeURIComponent(uploader);
-  const encodedNameSegment = encodedName;
-  const audioPath = category
-    ? `uploads/${encodeURIComponent(category)}/${soundId}__${uploaderSegment}__${encodedNameSegment}.${mediaExt}`
-    : `uploads/${soundId}__nocategory__${uploaderSegment}__${encodedNameSegment}.${mediaExt}`;
+  const audioPath = `uploads/${soundId}__${encodedName}.${mediaExt}`;
 
   confirmBtn.disabled = true;
   resetUploadProgress();
@@ -811,15 +785,11 @@ function wireUploadEvents() {
   const confirmBtn = getById("confirmUploadBtn");
   const audioInput = getById("audioUpload");
   const imageInput = getById("imageUpload");
-  const addCategoryBtn = getById("addCategoryBtn");
-  const removeCategoryBtn = getById("removeCategoryBtn");
   if (!confirmBtn) return;
 
   confirmBtn.addEventListener("click", () => uploadSingleSound());
   audioInput?.addEventListener("change", validateUploadFiles);
   imageInput?.addEventListener("change", validateUploadFiles);
-  addCategoryBtn?.addEventListener("click", () => handleAddCategory());
-  removeCategoryBtn?.addEventListener("click", () => handleRemoveCategory());
 }
 
 function boot() {
@@ -832,12 +802,8 @@ function boot() {
   unregisterServiceWorkers();
   wireLibraryEvents();
   wireUploadEvents();
-  if (getById("categorySelect")) {
-    loadCategories();
-  }
   if (getById("soundGrid")) {
     loadSounds();
-    renderCategoryFilter();
   }
 }
 
