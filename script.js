@@ -379,10 +379,10 @@ async function loadCategories() {
     } catch {}
   }
 
-  const foldersResult = await supabaseClient.storage.from(supabaseBucket).list("", { limit: 100, folderMode: "folders" });
+  const foldersResult = await supabaseClient.storage.from(supabaseBucket).list("uploads", { limit: 100, folderMode: "folders" });
   if (!foldersResult.error && foldersResult.data) {
     foldersResult.data.forEach((item) => {
-      if (item.name && item.name !== "uploads" && item.name !== "covers") {
+      if (item.name) {
         knownCategories.add(item.name);
       }
     });
